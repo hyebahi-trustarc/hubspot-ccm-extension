@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrustArc Consent Manager</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        label { display: block; margin: 10px 0 5px; }
+        input, button { padding: 8px; width: 100%; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h2>TrustArc Consent Manager Settings</h2>
+    <label for="trustarc-script">TrustArc Script URL:</label>
+    <input type="text" id="trustarc-script" placeholder="Enter TrustArc script URL" />
+    
+    <button onclick="saveSettings()">Save Settings</button>
+
+    <script>
+        function saveSettings() {
+            const scriptUrl = document.getElementById('trustarc-script').value;
+            if (!scriptUrl) {
+                alert('Please enter a valid TrustArc script URL');
+                return;
+            }
+
+            // Send settings to HubSpot
+            window.parent.postMessage({ type: "TRUSTARC_SAVE_SETTINGS", scriptUrl }, "*");
+
+            // Inject the TrustArc script dynamically
+            injectTrustArcScript(scriptUrl);
+        }
+
+        function injectTrustArcScript(scriptUrl) {
+            if (!document.querySelector("script[src='" + scriptUrl + "']")) {
+                let script = document.createElement('script');
+                script.src = scriptUrl;
+                script.async = true;
+                document.body.appendChild(script);
+            }
+
+            let consentDiv = document.getElementById('trustarc-consent');
+            if (!consentDiv) {
+                consentDiv = document.createElement('div');
+                consentDiv.id = 'trustarc-consent';
+                document.body.appendChild(consentDiv);
+            }
+        }
+
+        // Listen for messages from HubSpot
+        window.addEventListener("message", (event) => {
+            if (event.data.type === "TRUSTARC_LOAD_SETTINGS") {
+                const savedScriptUrl = event.data.scriptUrl;
+                if (savedScriptUrl) {
+                    document.getElementById('trustarc-script').value = savedScriptUrl;
+                    injectTrustArcScript(savedScriptUrl);
+                }
+            }
+        });
+
+        // Request settings from HubSpot when loaded
+        window.parent.postMessage({ type: "TRUSTARC_REQUEST_SETTINGS" }, "*");
+    </script>
+</body>
+</html>
